@@ -1,4 +1,4 @@
-# memory-game
+# Memory Game
 
 First run the server
 
@@ -6,7 +6,7 @@ First run the server
 python3 server.py
 ```
 
-Then the clients
+Then the clients, you will need two clients connected to be able to play
 
 ```sh
 python3 client.py
