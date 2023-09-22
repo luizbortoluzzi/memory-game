@@ -10,6 +10,8 @@ client_socket = None
 player_id = None
 current_player = 0
 cards_turned = 0
+current_turn = 0
+can_turn = True
 
 
 # Função para enviar ações para o servidor
@@ -40,30 +42,38 @@ def remove_cards(card_index1, card_index2):
 
 # Função para processar as atualizações recebidas do servidor
 def process_update(data):
-    global current_player, cards_turned
+    global current_player, cards_turned, current_turn, can_turn, player_id
     try:
         parts = data.strip().split()
         print("Parts", parts)
         if parts[0] == "UPDATE":
             player_id, card_index = map(int, parts[1:3])
-            card_value = parts[3]  # A carta é uma string
+            card_value = parts[3]  # Card is a string
             update_card(card_index, card_value)
-
         elif parts[0] == "REMOVE":
             card_index1, card_index2 = map(int, parts[1:])
             remove_cards(card_index1, card_index2)
-            pass
         elif parts[0] == "HIDE":
             card_index1, card_index2 = map(int, parts[1:])
             hide_cards(card_index1, card_index2)
+        elif parts[0] == "PLAYERTURN":
+            current_turn = int(parts[1])
+            print("PLAYER ID", player_id)
+            if player_id == current_turn:
+                can_turn = True
+            else:
+                can_turn = False
+    
 
     except Exception as e:
         print(f"Erro ao processar atualização: {e}")
 
 
 def on_card_click(card_index):
-    print(f"Carta {card_index} clicada")
-    send_action(f"TURN {card_index}")
+    global can_turn
+    if can_turn:
+        print(f"Carta {card_index} clicada")
+        send_action(f"TURN {card_index}")
 
 
 def receive_updates():
