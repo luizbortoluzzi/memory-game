@@ -18,6 +18,7 @@ current_player = 0
 # List of connected clients
 clients = []
 turned_cards_player = 0
+player_scores = [0, 0]
 
 
 # Function to broadcast messages to all clients
@@ -94,6 +95,12 @@ def change_player_turn():
     time.sleep(0.5)
     broadcast(f"PLAYERTURN {current_player}\n")
 
+def update_player_scores():
+    global player_scores
+    player_scores[current_player] += 1
+    time.sleep(0.3)
+    broadcast(f"SCORE {player_scores[0]} {player_scores[1]}\n")    
+
 # Function to check if the card index is valid
 def is_valid_card(card_index):
     return 0 <= card_index < len(cards)
@@ -130,6 +137,8 @@ def check_cards():
             time.sleep(1)
             broadcast(f"REMOVE {turned_cards[0]} {turned_cards[1]}\n")
             turned_cards = [-1, -1]
+            update_player_scores()
+            
     else:
         time.sleep(2)
         card_states[turned_cards[0]] = ""
