@@ -18,7 +18,6 @@ player_turn = 0  # 0 for the first player, 1 for the second player
 # List of connected clients
 clients = []
 turned_cards_player = 0
-current_turn = 0
 
 
 # Function to broadcast messages to all clients
@@ -33,7 +32,7 @@ def broadcast(message):
 
 # Function to handle player actions
 def handle_client(client_socket, player_id):
-    global current_turn
+
     # Add the client to the list of connected clients
     clients.append(client_socket)
 
@@ -76,12 +75,18 @@ def process_player_action(data, player_id):
                 turned_cards_player += 1
 
                 if turned_cards_player == 2:
-                    check_cards(player_id)
+                    check_cards()
                     turned_cards_player = 0
+                    change_player_turn(player_id)
 
         except Exception as e:
             print(f"Error processing card flip action: {e}")
 
+
+# Function to check if the card index is valid
+def change_player_turn(player_id):
+    time.sleep(0.5)
+    broadcast(f"PLAYERTURN {player_id}\n")
 
 # Function to check if the card index is valid
 def is_valid_card(card_index):
@@ -104,26 +109,27 @@ def flip_card(player_id, card_index):
         turned_cards[0] = card_index
     elif turned_cards[1] == -1:
         turned_cards[1] = card_index
-        check_cards(player_id)
+        check_cards()
 
 
 # Function to check if the turned cards are equal and update the game state
-def check_cards(player_id):
-    global turned_cards, current_turn
+def check_cards():
+    global turned_cards
 
     card1 = cards[turned_cards[0]]
     card2 = cards[turned_cards[1]]
 
     if card1 == card2:
-        broadcast(f"REMOVE {turned_cards[0]} {turned_cards[1]}\n")
+        if turned_cards[0] != -1 and turned_cards[1] != -1:
+            time.sleep(1)
+            broadcast(f"REMOVE {turned_cards[0]} {turned_cards[1]}\n")
+            turned_cards = [-1, -1]
     else:
         time.sleep(2)
         card_states[turned_cards[0]] = ""
         card_states[turned_cards[1]] = ""
         broadcast(f"HIDE {turned_cards[0]} {turned_cards[1]}\n")
         turned_cards = [-1, -1]
-        # After the player takes their actions, switch to the next player's turn
-        current_turn = 1 - current_turn
 
 
 
