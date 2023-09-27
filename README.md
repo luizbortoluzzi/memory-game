@@ -1,5 +1,17 @@
 # Memory Game
 
+You'll need to install tkinter lib
+
+For Ubuntu
+```sh
+sudo apt-get install python3-tk
+```
+
+For Fedora
+```sh
+sudo dnf install python3-tkinter
+```
+
 First run the server
 
 ```sh
