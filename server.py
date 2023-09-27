@@ -105,11 +105,20 @@ def update_player_scores():
 def is_valid_card(card_index):
     return 0 <= card_index < len(cards)
 
-
 # Function to check if the card is hidden
 def is_card_hidden(card_index):
+    global card_states
     return card_states[card_index] == ""
 
+def is_game_over():
+    global card_states
+    return card_states.count("") == 0
+
+def end_game():
+    global player_scores
+    winner = player_scores.index(max(player_scores))
+    time.sleep(1) 
+    broadcast(f"GAMEOVER WINNER {winner}\n")
 
 # Function to flip a card and process game logic
 def flip_card(player_id, card_index):
@@ -124,7 +133,6 @@ def flip_card(player_id, card_index):
         turned_cards[1] = card_index
         check_cards()
 
-
 # Function to check if the turned cards are equal and update the game state
 def check_cards():
     global turned_cards
@@ -138,6 +146,8 @@ def check_cards():
             broadcast(f"REMOVE {turned_cards[0]} {turned_cards[1]}\n")
             turned_cards = [-1, -1]
             update_player_scores()
+            if is_game_over():
+                end_game()
             
     else:
         time.sleep(2)
