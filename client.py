@@ -2,17 +2,20 @@ import tkinter as tk
 import socket
 import threading
 
-# Variáveis globais para a interface gráfica
 root = tk.Tk()
-root.title("Jogo da Memória")
+root.title("Memory Game")
 buttons = []
 client_socket = None
 player_id = None
 current_player = 0
 cards_turned = 0
-current_turn = 0
-can_turn = True
+can_turn = False
+player_id_label = tk.Label(root, text="You are the player ")
+player_scores = [0, 0] 
 
+player1_score_label = tk.Label(root, text=f"Score Player 0 - {player_scores[0]}")
+
+player2_score_label = tk.Label(root, text=f"Score Player 1 - {player_scores[1]}")
 
 # Função para enviar ações para o servidor
 def send_action(action):
@@ -39,15 +42,20 @@ def remove_cards(card_index1, card_index2):
     buttons[card_index1].config(state=tk.DISABLED)
     buttons[card_index2].config(state=tk.DISABLED)
 
+# Função para atualizar e exibir a pontuação dos jogadores na GUI
+def update_player_scores():
+    global player1_score_label, player2_score_label
+    player1_score_label.config(text=f"Score Player 0 - {player_scores[0]}")
+    player2_score_label.config(text=f"Score Player 1 - {player_scores[1]}")
 
 # Função para processar as atualizações recebidas do servidor
 def process_update(data):
-    global current_player, cards_turned, current_turn, can_turn, player_id
+    global current_player, cards_turned, can_turn, player_id
     try:
         parts = data.strip().split()
         print("Parts", parts)
         if parts[0] == "UPDATE":
-            player_id, card_index = map(int, parts[1:3])
+            _, card_index = map(int, parts[1:3])
             card_value = parts[3]  # Card is a string
             update_card(card_index, card_value)
         elif parts[0] == "REMOVE":
@@ -57,13 +65,18 @@ def process_update(data):
             card_index1, card_index2 = map(int, parts[1:])
             hide_cards(card_index1, card_index2)
         elif parts[0] == "PLAYERTURN":
-            current_turn = int(parts[1])
-            print("PLAYER ID", player_id)
-            if player_id == current_turn:
+            current_player = int(parts[1])
+            if player_id == current_player:
                 can_turn = True
             else:
                 can_turn = False
-    
+        elif parts[0] == "PLAYERID":
+            player_id = int(parts[1])
+            update_player_id_label(player_id)
+        elif parts[0] == "SCORE":
+            player_scores[0], player_scores[1] = map(int, parts[1:])
+            update_player_scores()  
+
 
     except Exception as e:
         print(f"Erro ao processar atualização: {e}")
@@ -88,16 +101,31 @@ def receive_updates():
             print(f"Erro ao receber atualizações do servidor: {e}")
 
 
-def create_card_buttons():
+def create_gui():
+    global player_id, player_id_label, player1_score_label, player2_score_label
+
+    player1_score_label = tk.Label(root, text=f"Score Player 0 - {player_scores[0]}")
+    player1_score_label.grid(row=0, column=0, columnspan=2, padx=10, pady=10)
+
+    player2_score_label = tk.Label(root, text=f"Score Player 1 - {player_scores[1]}")
+    player2_score_label.grid(row=0, column=2, columnspan=2, padx=10, pady=10)
+
     card_buttons = []
     for i in range(16):  # 16 Cards
         card_button = tk.Button(
             root, text=" ", width=5, height=2, command=lambda i=i: on_card_click(i)
         )
         card_buttons.append(card_button)
-        card_button.grid(row=i // 4, column=i % 4)
+        card_button.grid(row=i // 4 + 1, column=i % 4)
+
+    player_id_label = tk.Label(root, text=f"You are the player {player_id}")
+    player_id_label.grid(row=17 // 4 + 1, columnspan=4)     
     return card_buttons
 
+
+def update_player_id_label(new_player_id):
+    global player_id_label
+    player_id_label.config(text=f"You are the player {new_player_id}")
 
 def main():
     global client_socket, buttons
@@ -113,7 +141,7 @@ def main():
     receive_thread = threading.Thread(target=receive_updates)
     receive_thread.start()
 
-    buttons = create_card_buttons()
+    buttons = create_gui()
 
     root.mainloop()
 

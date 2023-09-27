@@ -14,10 +14,11 @@ random.shuffle(cards)
 card_states = [""] * len(cards)
 turned_cards = [-1, -1]
 player_turn = 0  # 0 for the first player, 1 for the second player
-
+current_player = 0 
 # List of connected clients
 clients = []
 turned_cards_player = 0
+player_scores = [0, 0]
 
 
 # Function to broadcast messages to all clients
@@ -39,13 +40,18 @@ def handle_client(client_socket, player_id):
     # Send a welcome message to the player
     client_socket.send("Welcome to the Memory Game!\n".encode())
 
+    print(player_id, current_player)
+    if player_id == current_player:
+        time.sleep(0.3)
+        broadcast(f"PLAYERTURN {player_id}\n") 
+
     while True:
         try:
             data = client_socket.recv(1024).decode()
             print(data)
             if not data:
                 break
-
+            
             process_player_action(data, player_id)
 
         except Exception as e:
@@ -77,16 +83,23 @@ def process_player_action(data, player_id):
                 if turned_cards_player == 2:
                     check_cards()
                     turned_cards_player = 0
-                    change_player_turn(player_id)
 
         except Exception as e:
             print(f"Error processing card flip action: {e}")
 
 
 # Function to check if the card index is valid
-def change_player_turn(player_id):
+def change_player_turn():
+    global current_player
+    current_player = 1 - current_player
     time.sleep(0.5)
-    broadcast(f"PLAYERTURN {player_id}\n")
+    broadcast(f"PLAYERTURN {current_player}\n")
+
+def update_player_scores():
+    global player_scores
+    player_scores[current_player] += 1
+    time.sleep(0.3)
+    broadcast(f"SCORE {player_scores[0]} {player_scores[1]}\n")    
 
 # Function to check if the card index is valid
 def is_valid_card(card_index):
@@ -100,7 +113,7 @@ def is_card_hidden(card_index):
 
 # Function to flip a card and process game logic
 def flip_card(player_id, card_index):
-    global turned_cards, player_turn
+    global turned_cards
 
     card_states[card_index] = cards[card_index]
     broadcast(f"UPDATE {player_id} {card_index} {cards[card_index]}\n")
@@ -124,12 +137,15 @@ def check_cards():
             time.sleep(1)
             broadcast(f"REMOVE {turned_cards[0]} {turned_cards[1]}\n")
             turned_cards = [-1, -1]
+            update_player_scores()
+            
     else:
         time.sleep(2)
         card_states[turned_cards[0]] = ""
         card_states[turned_cards[1]] = ""
         broadcast(f"HIDE {turned_cards[0]} {turned_cards[1]}\n")
         turned_cards = [-1, -1]
+        change_player_turn()    
 
 
 
@@ -146,6 +162,7 @@ def main():
         client_socket, client_addr = server.accept()
         print(f"Connection received from {client_addr[0]}:{client_addr[1]}")
 
+        client_socket.send(f"PLAYERID {player_id}\n".encode())
         # Start a thread to handle the client
         client_handler = threading.Thread(
             target=handle_client, args=(client_socket, player_id)
