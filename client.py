@@ -2,6 +2,7 @@ import tkinter as tk
 import socket
 import threading
 
+from tkinter import messagebox
 root = tk.Tk()
 root.title("Memory Game")
 buttons = []
@@ -11,44 +12,43 @@ current_player = 0
 cards_turned = 0
 can_turn = False
 player_id_label = tk.Label(root, text="You are the player ")
-player_scores = [0, 0] 
+player_scores = [0, 0]
 
 player1_score_label = tk.Label(root, text=f"Score Player 0 - {player_scores[0]}")
 
 player2_score_label = tk.Label(root, text=f"Score Player 1 - {player_scores[1]}")
 
-# Função para enviar ações para o servidor
+game_over_label = tk.Label(root, text="", font=("Helvetica", 16))
+game_over_label.pack_forget()
+
+
 def send_action(action):
-    print(f"Enviando ação: {action}")
     try:
         client_socket.send(action.encode())
     except Exception as e:
-        print(f"Erro ao enviar ação para o servidor: {e}")
+        print(f"Failed to send action to the server: {e}")
 
 
-# Função para atualizar a aparência das cartas
 def update_card(card_index, card_value):
     buttons[card_index].config(text=card_value)
 
 
-# Função para esconder as cartas viradas
 def hide_cards(card_index1, card_index2):
     buttons[card_index1].config(text=" ")
     buttons[card_index2].config(text=" ")
 
 
-# Função para remover as cartas correspondentes
 def remove_cards(card_index1, card_index2):
     buttons[card_index1].config(state=tk.DISABLED)
     buttons[card_index2].config(state=tk.DISABLED)
 
-# Função para atualizar e exibir a pontuação dos jogadores na GUI
+
 def update_player_scores():
     global player1_score_label, player2_score_label
     player1_score_label.config(text=f"Score Player 0 - {player_scores[0]}")
     player2_score_label.config(text=f"Score Player 1 - {player_scores[1]}")
 
-# Função para processar as atualizações recebidas do servidor
+
 def process_update(data):
     global current_player, cards_turned, can_turn, player_id
     try:
@@ -75,17 +75,19 @@ def process_update(data):
             update_player_id_label(player_id)
         elif parts[0] == "SCORE":
             player_scores[0], player_scores[1] = map(int, parts[1:])
-            update_player_scores()  
+            update_player_scores()
+        elif parts[0] == "GAMEOVER":
+            winner = int(parts[2])
+            show_game_over_screen(winner)        
 
 
     except Exception as e:
-        print(f"Erro ao processar atualização: {e}")
+        print(f"Update Error: {e}")
 
 
 def on_card_click(card_index):
     global can_turn
     if can_turn:
-        print(f"Carta {card_index} clicada")
         send_action(f"TURN {card_index}")
 
 
@@ -98,7 +100,7 @@ def receive_updates():
                 break
             process_update(data)
         except Exception as e:
-            print(f"Erro ao receber atualizações do servidor: {e}")
+            print(f"Error to fetch server: {e}")
 
 
 def create_gui():
@@ -123,6 +125,10 @@ def create_gui():
     return card_buttons
 
 
+def show_game_over_screen(winner):
+    messagebox.showinfo('Game Over', f"Player {winner} wins!")
+    root.quit()
+
 def update_player_id_label(new_player_id):
     global player_id_label
     player_id_label.config(text=f"You are the player {new_player_id}")
@@ -134,7 +140,7 @@ def main():
     try:
         client_socket.connect(("localhost", 9999))
     except Exception as e:
-        print(f"Erro ao conectar ao servidor: {e}")
+        print(f"Error to connect to the server: {e}")
         return
 
     # Thread to receive server updates

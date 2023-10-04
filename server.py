@@ -21,7 +21,7 @@ turned_cards_player = 0
 player_scores = [0, 0]
 
 
-# Function to broadcast messages to all clients
+
 def broadcast(message):
     for client in clients:
         try:
@@ -31,13 +31,11 @@ def broadcast(message):
             clients.remove(client)
 
 
-# Function to handle player actions
+
 def handle_client(client_socket, player_id):
 
-    # Add the client to the list of connected clients
     clients.append(client_socket)
 
-    # Send a welcome message to the player
     client_socket.send("Welcome to the Memory Game!\n".encode())
 
     print(player_id, current_player)
@@ -63,7 +61,6 @@ def handle_client(client_socket, player_id):
     client_socket.close()
 
 
-# Function to process a player's action
 def process_player_action(data, player_id):
     global turned_cards, player_turn, turned_cards_player
 
@@ -88,7 +85,6 @@ def process_player_action(data, player_id):
             print(f"Error processing card flip action: {e}")
 
 
-# Function to check if the card index is valid
 def change_player_turn():
     global current_player
     current_player = 1 - current_player
@@ -101,17 +97,25 @@ def update_player_scores():
     time.sleep(0.3)
     broadcast(f"SCORE {player_scores[0]} {player_scores[1]}\n")    
 
-# Function to check if the card index is valid
+
 def is_valid_card(card_index):
     return 0 <= card_index < len(cards)
 
-
-# Function to check if the card is hidden
 def is_card_hidden(card_index):
+    global card_states
     return card_states[card_index] == ""
 
+def is_game_over():
+    global card_states
+    return card_states.count("") == 0
 
-# Function to flip a card and process game logic
+def end_game():
+    global player_scores
+    winner = player_scores.index(max(player_scores))
+    time.sleep(1) 
+    broadcast(f"GAMEOVER WINNER {winner}\n")
+
+
 def flip_card(player_id, card_index):
     global turned_cards
 
@@ -125,7 +129,6 @@ def flip_card(player_id, card_index):
         check_cards()
 
 
-# Function to check if the turned cards are equal and update the game state
 def check_cards():
     global turned_cards
 
@@ -138,6 +141,8 @@ def check_cards():
             broadcast(f"REMOVE {turned_cards[0]} {turned_cards[1]}\n")
             turned_cards = [-1, -1]
             update_player_scores()
+            if is_game_over():
+                end_game()
             
     else:
         time.sleep(2)
