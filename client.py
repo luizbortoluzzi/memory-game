@@ -82,13 +82,12 @@ def process_update(data):
 
 
     except Exception as e:
-        print(f"Erro ao processar atualização: {e}")
+        print(f"Update Error: {e}")
 
 
 def on_card_click(card_index):
     global can_turn
     if can_turn:
-        print(f"Carta {card_index} clicada")
         send_action(f"TURN {card_index}")
 
 
@@ -101,7 +100,7 @@ def receive_updates():
                 break
             process_update(data)
         except Exception as e:
-            print(f"Erro ao receber atualizações do servidor: {e}")
+            print(f"Error to fetch server: {e}")
 
 
 def create_gui():
@@ -126,17 +125,6 @@ def create_gui():
     return card_buttons
 
 
-# def show_game_over_screen(winner):
-#     global player_scores
-#     game_over_window = tk.Toplevel()
-#     game_over_window.title("Game Over")
-
-#     winner_label = tk.Label(game_over_window, text=f"Player {winner} wins!", font=("Helvetica", 16))
-#     winner_label.pack(pady=10)
-
-#     score_label = tk.Label(game_over_window, text=f"Scores: Player 0 - {player_scores[0]}, Player 1 - {player_scores[1]}", font=("Helvetica", 12))
-#     score_label.pack(pady=10)
-
 def show_game_over_screen(winner):
     messagebox.showinfo('Game Over', f"Player {winner} wins!")
     root.quit()
@@ -152,7 +140,7 @@ def main():
     try:
         client_socket.connect(("localhost", 9999))
     except Exception as e:
-        print(f"Erro ao conectar ao servidor: {e}")
+        print(f"Error to connect to the server: {e}")
         return
 
     # Thread to receive server updates
